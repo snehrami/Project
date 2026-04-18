@@ -1,0 +1,7 @@
+streamlit
+numpy
+Pillow
+tensorflow-cpu
+requests
+fpdf2
+pandas

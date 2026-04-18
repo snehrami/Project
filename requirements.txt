@@ -1,7 +1,0 @@
-streamlit
-numpy
-Pillow
-tensorflow
-requests
-fpdf
-pandas

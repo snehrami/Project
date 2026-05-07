@@ -105,6 +105,20 @@ st.markdown("""
         color: #E2E8F0;
         font-weight: 600;
     }
+    /* File Uploader Button Styling */
+    div[data-testid="stFileUploader"] button {
+        background: linear-gradient(45deg, #FF3CAC, #784BA0) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    div[data-testid="stFileUploader"] button:hover {
+        transform: scale(1.05) !important;
+        box-shadow: 0 4px 15px rgba(255, 60, 172, 0.4) !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -212,13 +226,10 @@ with col_cam: FRAME_WINDOW = st.empty()
 with col_spacer:
     st.markdown("### ⚙️ Control Panel")
     
-    input_mode = st.radio("📥 Select Input Mode:", ["Live Webcam", "Upload Photo", "Take Photo"])
+    input_mode = st.radio("📥 Select Input Mode:", ["Upload Photo", "Take Photo"])
     run = False
     uploaded_file = None
-    if input_mode == "Live Webcam":
-        try: run = st.toggle("🎥 Enable Live Camera", value=False)
-        except AttributeError: run = st.checkbox("🎥 Enable Live Camera", value=False)
-    elif input_mode == "Upload Photo":
+    if input_mode == "Upload Photo":
         uploaded_file = st.file_uploader("📤 Upload an Image", type=['jpg', 'jpeg', 'png'])
     else:
         uploaded_file = st.camera_input("📸 Take a Picture")
@@ -330,53 +341,7 @@ def process_frame(frame):
 # ==========================================
 # 6. Run Mode Logic (Live / Photo)
 # ==========================================
-if input_mode == "Live Webcam":
-    if not run:
-        FRAME_WINDOW.info("⏸️ Camera is paused. Toggle 'Enable Live Camera' in the sidebar to start.")
-    else:
-        camera = cv2.VideoCapture(0)
-        if not camera.isOpened():
-            camera = cv2.VideoCapture(1)
-        if not camera.isOpened():
-            camera = cv2.VideoCapture(0, cv2.CAP_DSHOW)
-        if not camera.isOpened():
-            st.error("🚨 Error: Could not access the webcam.")
-        else:
-            prev_time = time.time()
-            while run:
-                ret, frame = camera.read()
-                if not ret:
-                    st.error("Failed to capture video feed.")
-                    break
-                    
-                frame = cv2.resize(frame, (800, 600))
-                processed_frame, num_faces, dom_emotion, num_objects, avg_acc, detected_names = process_frame(frame)
-                
-                if detected_names:
-                    from collections import Counter
-                    counts = Counter(detected_names)
-                    list_text = "\n".join([f"- **{name.title()}** (x{count})" for name, count in counts.items()])
-                    objects_list_placeholder.markdown(list_text)
-                else:
-                    objects_list_placeholder.markdown("_None_")
-                
-                curr_time = time.time()
-                fps = 1 / (curr_time - prev_time) if (curr_time - prev_time) > 0 else 0
-                prev_time = curr_time
-                
-                fps_metric.metric("⚡ Current FPS", f"{int(fps)}")
-                face_metric.metric("👤 Faces", f"{num_faces}")
-                emotion_metric.metric("🎭 Emotion", f"{dom_emotion} {EMOJI_MAP.get(dom_emotion, '')}")
-                object_metric.metric("📦 Objects", f"{num_objects}")
-                acc_metric.metric("🎯 Avg Accuracy", f"{avg_acc}%" if avg_acc > 0 else "0%")
-                
-                frame_rgb = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB)
-                try: FRAME_WINDOW.image(frame_rgb, use_container_width=True)
-                except TypeError: FRAME_WINDOW.image(frame_rgb)
-                
-            camera.release()
-
-elif input_mode in ["Upload Photo", "Take Photo"]:
+if input_mode in ["Upload Photo", "Take Photo"]:
     if uploaded_file is None:
         FRAME_WINDOW.info("🖼️ Please provide a photo from the sidebar on the left.")
     else:
